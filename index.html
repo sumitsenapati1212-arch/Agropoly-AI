@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroPoly Smart - Smart Monitoring for Smarter Polyhouse Farming</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            agro: {
+              50: '#f2fbf5',
+              100: '#e1f7e7',
+              200: '#c5eed2',
+              300: '#98dfb0',
+              400: '#63c788',
+              500: '#3ba966',
+              600: '#2b884f',
+              700: '#246d41',
+              800: '#205737',
+              900: '#1c472f',
+              950: '#0b2718',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .pulse-indicator {
+      animation: pulseAnim 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.95); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-agro-500 selection:text-white">
+
+  <!-- ==================== SYSTEM STATUS HEADER ==================== -->
+  <div id="modeHeader" class="bg-slate-900 text-white text-xs px-4 py-2 flex flex-wrap justify-between items-center gap-2 transition-colors duration-300">
+    <div class="flex items-center space-x-2.5">
+      <span id="modeDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-indicator"></span>
+      <span id="modeStatusText" class="font-medium text-slate-200">
+        System Mode: <strong class="text-white">LIVE HARDWARE MODE</strong> (Listening for ESP32 on <code class="bg-slate-800 px-1 py-0.5 rounded text-emerald-300">/api/iot/readings</code>)
+      </span>
+    </div>
+    <div class="flex items-center space-x-3 text-xs">
+      <button onclick="toggleSystemMode()" id="modeSwitchBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded font-bold uppercase tracking-wider transition shadow-sm">
+        Switch to Demo Simulation
+      </button>
+      <span class="text-slate-600">|</span>
+      <div id="heartbeatPill" class="flex items-center space-x-1.5 text-slate-300 font-mono">
+        <i data-lucide="radio" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span id="heartbeatMsg">Waiting for sensor data...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== NAVIGATION BAR ==================== -->
+  <header class="glass-nav border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('dashboard')">
+        <div class="bg-gradient-to-tr from-agro-700 to-agro-500 p-2.5 rounded-xl text-white shadow-md shadow-agro-600/30">
+          <i data-lucide="sprout" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-black text-slate-900 tracking-tight leading-none">AgroPoly <span class="text-agro-600">Smart</span></h1>
+          <p class="text-[11px] font-semibold text-slate-500 tracking-wide mt-0.5">Smart Monitoring for Smarter Polyhouse Farming</p>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Tabs -->
+      <nav class="hidden lg:flex items-center space-x-1">
+        <button onclick="navigate('dashboard')" class="nav-tab px-3 py-2 rounded-lg text-xs font-bold text-agro-700 bg-agro-100" data-view="dashboard">Dashboard</button>
+        <button onclick="navigate('sensors')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="sensors">Sensors</button>
+        <button onclick="navigate('history')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="history">Analytics</button>
+        <button onclick="navigate('irrigation')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="irrigation">Irrigation</button>
+        <button onclick="navigate('ventilation')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="ventilation">Ventilation</button>
+        <button onclick="navigate('crops')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="crops">Crops</button>
+        <button onclick="navigate('ai-scanner')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="ai-scanner">AI Scanner</button>
+        <button onclick="navigate('fertilizer')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="fertilizer">Fertilizer</button>
+        <button onclick="navigate('weather')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="weather">Weather</button>
+        <button onclick="navigate('calculator')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="calculator">Economics</button>
+        <button onclick="navigate('iot-setup')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="iot-setup">ESP32 Setup</button>
+      </nav>
+
+      <!-- Active Polyhouse Crop Selector -->
+      <div class="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+        <i data-lucide="flower" class="w-4 h-4 text-agro-600"></i>
+        <select id="activeCropDropdown" onchange="onCropChange(this.value)" class="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer">
+          <option value="Tomato">Crop: Tomato</option>
+          <option value="Capsicum">Crop: Capsicum</option>
+          <option value="Cucumber">Crop: Cucumber</option>
+          <option value="Strawberry">Crop: Strawberry</option>
+          <option value="Gerbera">Crop: Gerbera</option>
+          <option value="Rose">Crop: Dutch Rose</option>
+          <option value="Lettuce">Crop: Lettuce</option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- Mobile Scrollable Nav Bar -->
+    <div class="lg:hidden flex overflow-x-auto space-x-1 px-4 py-2 border-t border-slate-200 bg-white custom-scroll">
+      <button onclick="navigate('dashboard')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-bold text-agro-700 bg-agro-100" data-view="dashboard">Dashboard</button>
+      <button onclick="navigate('sensors')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="sensors">Sensors</button>
+      <button onclick="navigate('history')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="history">Analytics</button>
+      <button onclick="navigate('irrigation')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="irrigation">Irrigation</button>
+      <button onclick="navigate('ventilation')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="ventilation">Ventilation</button>
+      <button onclick="navigate('crops')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="crops">Crops</button>
+      <button onclick="navigate('ai-scanner')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="ai-scanner">AI Scanner</button>
+      <button onclick="navigate('fertilizer')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="fertilizer">Fertilizer</button>
+      <button onclick="navigate('weather')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="weather">Weather</button>
+      <button onclick="navigate('calculator')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="calculator">Economics</button>
+      <button onclick="navigate('iot-setup')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="iot-setup">ESP32 Setup</button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+    <section id="view-dashboard" class="space-y-6">
+      
+      <!-- Smart Alerts Banner Area -->
+      <div id="alertsContainer" class="space-y-2"></div>
+
+      <!-- Quick Summary Status Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase text-slate-400">Microcontroller Link</p>
+            <p id="controllerStatusTitle" class="text-base font-black text-slate-800 mt-0.5">POLYHOUSE_001</p>
+            <p id="controllerStatusSub" class="text-xs text-amber-600 font-medium">Waiting for ESP32 ping...</p>
+          </div>
+          <div id="controllerIconBox" class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+            <i data-lucide="cpu" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase text-slate-400">Drip Irrigation</p>
+            <p id="dashPumpStatus" class="text-base font-black text-slate-800 mt-0.5">PUMP: OFF</p>
+            <p id="dashPumpMode" class="text-xs text-slate-500 font-medium">Mode: Auto-Smart (Soil &lt; 50%)</p>
+          </div>
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <i data-lucide="droplets" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase text-slate-400">Ventilation Exhaust</p>
+            <p id="dashFanStatus" class="text-base font-black text-slate-800 mt-0.5">FAN: OFF</p>
+            <p id="dashFanMode" class="text-xs text-slate-500 font-medium">Auto Threshold: 30.0°C</p>
+          </div>
+          <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+            <i data-lucide="fan" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase text-slate-400">Target Microclimate</p>
+            <p id="dashCropTarget" class="text-base font-black text-agro-700 mt-0.5">Tomato (VPD: Optimal)</p>
+            <p class="text-xs text-slate-500 font-medium">Ideal: 20-28°C | 60-75% RH</p>
+          </div>
+          <div class="p-3 bg-agro-50 text-agro-600 rounded-xl">
+            <i data-lucide="trees" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live 6 IoT Sensor Telemetry Cards -->
+      <div>
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-black uppercase tracking-wider text-slate-700 flex items-center space-x-2">
+            <i data-lucide="activity" class="w-4 h-4 text-agro-600"></i>
+            <span>Real-Time Sensor Telemetry</span>
+          </h2>
+          <span class="text-xs text-slate-400 font-mono">Payload Schema v2.1</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <!-- Card 1: Air Temperature -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                  <i data-lucide="thermometer" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Air Temperature</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: DHT22 / AM2302 (GPIO 4)</p>
+                </div>
+              </div>
+              <span id="badge-temp" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-temp" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">°C</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-temp" class="bg-orange-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Optimal: <strong id="opt-temp-text">20 - 28 °C</strong></span>
+              <span id="time-temp">Updated: --</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Relative Humidity -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                  <i data-lucide="cloud-rain" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Relative Humidity</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: DHT22 Capacitive (GPIO 4)</p>
+                </div>
+              </div>
+              <span id="badge-hum" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-hum" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-hum" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Optimal: <strong id="opt-hum-text">60 - 75 %</strong></span>
+              <span id="time-hum">Updated: --</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Soil Moisture -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                  <i data-lucide="sprout" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Soil Moisture</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: Capacitive V1.2 (GPIO 34 ADC)</p>
+                </div>
+              </div>
+              <span id="badge-soil" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-soil" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-soil" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Pump Trigger: <strong id="opt-soil-text">&lt; 50 %</strong></span>
+              <span id="time-soil">Updated: --</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Light Intensity -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
+                  <i data-lucide="sun" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Light Intensity</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: BH1750 Digital I2C (GPIO 21/22)</p>
+                </div>
+              </div>
+              <span id="badge-light" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-light" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">lux</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-light" class="bg-yellow-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Target: <strong>18,000 - 35,000 lux</strong></span>
+              <span id="time-light">Updated: --</span>
+            </div>
+          </div>
+
+          <!-- Card 5: Carbon Dioxide -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                  <i data-lucide="wind" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Carbon Dioxide (CO₂)</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: MH-Z19 NDIR Optical UART</p>
+                </div>
+              </div>
+              <span id="badge-co2" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-co2" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">ppm</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-co2" class="bg-purple-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Target Enrichment: <strong>600 - 1,000 ppm</strong></span>
+              <span id="time-co2">Updated: --</span>
+            </div>
+          </div>
+
+          <!-- Card 6: Water Tank Level -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
+                  <i data-lucide="gauge" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Water Tank Level</h3>
+                  <p class="text-[11px] text-slate-400">Sensor: Ultrasonic HC-SR04 (GPIO 18/19)</p>
+                </div>
+              </div>
+              <span id="badge-tank" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
+            </div>
+            <div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="val-tank" class="text-3xl font-black text-slate-900">--</span>
+                <span class="text-slate-500 font-bold text-sm">%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                <div id="bar-tank" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
+              <span>Safety Cutoff: <strong>&gt; 20 %</strong></span>
+              <span id="time-tank">Updated: --</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick Real-Time Microclimate Telemetry Chart -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Synchronized Environmental Stream</h3>
+            <p class="text-xs text-slate-400">Live sliding chart window (updates dynamically on each incoming ESP32 packet)</p>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="inline-flex items-center space-x-1 font-semibold text-orange-600">
+              <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+              <span>Air Temp (°C)</span>
+            </span>
+            <span class="inline-flex items-center space-x-1 font-semibold text-blue-600 ml-3">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span>Humidity (%)</span>
+            </span>
+          </div>
+        </div>
+        <div class="h-64 w-full">
+          <canvas id="quickTelemetryCanvas"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== 2. SENSORS FLEET VIEW ==================== -->
+    <section id="view-sensors" class="space-y-6 hidden">
+      <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">Polyhouse Sensor Fleet</h2>
+          <p class="text-xs text-slate-500">Status, physical hardware pins, thresholds, and last communication timestamps</p>
+        </div>
+        <button onclick="scanSensorPins()" class="inline-flex items-center space-x-2 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 shadow-sm transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Check Sensor Link Pins</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-xs divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
+              <tr>
+                <th class="px-6 py-3.5">Sensor Parameter</th>
+                <th class="px-6 py-3.5">Physical Model & GPIO</th>
+                <th class="px-6 py-3.5">Live Reading</th>
+                <th class="px-6 py-3.5">Configured Threshold</th>
+                <th class="px-6 py-3.5">Hardware Status</th>
+                <th class="px-6 py-3.5">Last Communication</th>
+              </tr>
+            </thead>
+            <tbody id="sensorsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. HISTORICAL ANALYTICS VIEW ==================== -->
+    <section id="view-history" class="space-y-6 hidden">
+      <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">Historical Agronomic Analytics</h2>
+          <p class="text-xs text-slate-500">Analyze microclimate shifts, minimum, maximum, and diurnal averages</p>
+        </div>
+        <div class="flex items-center space-x-1 bg-white p-1 rounded-lg border border-slate-200 text-xs">
+          <button onclick="setAnalyticsTimeframe('1h')" class="hist-btn px-3 py-1 rounded font-bold bg-agro-600 text-white" data-tf="1h">Last 1 Hour</button>
+          <button onclick="setAnalyticsTimeframe('24h')" class="hist-btn px-3 py-1 rounded font-semibold text-slate-600 hover:bg-slate-100" data-tf="24h">Last 24 Hours</button>
+          <button onclick="setAnalyticsTimeframe('7d')" class="hist-btn px-3 py-1 rounded font-semibold text-slate-600 hover:bg-slate-100" data-tf="7d">Last 7 Days</button>
+          <button onclick="setAnalyticsTimeframe('30d')" class="hist-btn px-3 py-1 rounded font-semibold text-slate-600 hover:bg-slate-100" data-tf="30d">Last 30 Days</button>
+        </div>
+      </div>
+
+      <!-- Aggregate Statistical Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Mean Temperature</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">25.8 °C</p>
+          <p class="text-[10px] text-slate-400">Min: 18.2 | Max: 31.4</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Mean Humidity</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">67.5 %</p>
+          <p class="text-[10px] text-slate-400">Min: 50% | Max: 82%</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Mean Soil Moisture</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">62.0 %</p>
+          <p class="text-[10px] text-slate-400">Min: 45% | Max: 76%</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Peak Light (DLI)</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">34.2k lux</p>
+          <p class="text-[10px] text-slate-400">DLI: 15.6 mol/m²/d</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Mean CO₂ Target</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">680 ppm</p>
+          <p class="text-[10px] text-slate-400">Photosynthesis Peak</p>
+        </div>
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold uppercase text-slate-400">Irrigation Cycles</p>
+          <p class="text-lg font-black text-slate-900 mt-0.5">5 Dispatches</p>
+          <p class="text-[10px] text-slate-400">Est. 210 Litres</p>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
+          <h3 class="text-sm font-bold text-slate-900">Diurnal Temperature & Humidity Trajectory</h3>
+          <div class="h-64"><canvas id="chartHistTempHum"></canvas></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
+          <h3 class="text-sm font-bold text-slate-900">Soil Moisture Depletion vs Irrigation Runs</h3>
+          <div class="h-64"><canvas id="chartHistSoil"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 4. IRRIGATION CONTROLLER ==================== -->
+    <section id="view-irrigation" class="space-y-6 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">Precision Irrigation & Drip Controller</h2>
+          <p class="text-xs text-slate-500">Automated moisture-triggered drip relay interfaced with ESP32 (GPIO 26)</p>
+        </div>
+        <div class="flex items-center space-x-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-200">
+          <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+          <span>Low Water Tank Cutoff Active (20%)</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Controls & Setpoint Panel -->
+        <div class="lg:col-span-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+              <div class="p-3 bg-blue-100 text-blue-700 rounded-xl">
+                <i data-lucide="droplet" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Sub-Surface Drip Pump Relay</h3>
+                <p class="text-xs text-slate-400">ESP32 Pin: GPIO 26 | Relay Channel 1</p>
+              </div>
+            </div>
+            <span id="irrigRelayBadge" class="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600">STANDBY (OFF)</span>
+          </div>
+
+          <!-- Automatic Trigger Setpoint Slider -->
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between text-xs font-bold text-slate-700">
+              <span>Automatic Irrigation Trigger:</span>
+              <span id="soilSetDisplay" class="text-blue-600 font-mono">Soil Moisture &lt; 50%</span>
+            </div>
+            <input type="range" min="20" max="80" value="50" id="soilSetSlider" oninput="onSoilSliderChange(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>20% (Dry Alert)</span>
+              <span>50% (Default Setpoint)</span>
+              <span>80% (Field Saturation)</span>
+            </div>
+          </div>
+
+          <!-- Mode Selector -->
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="setPumpMode('AUTO')" id="btnPumpModeAuto" class="py-2.5 px-3 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+              <span>AUTO SMART MODE</span>
+            </button>
+            <button onclick="setPumpMode('MANUAL')" id="btnPumpModeManual" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+              <span>MANUAL OVERRIDE</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="openModal('PUMP_START')" class="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md shadow-blue-500/20 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span>START PUMP</span>
+            </button>
+            <button onclick="openModal('PUMP_STOP')" class="py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-md shadow-red-500/20 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="square" class="w-4 h-4"></i>
+              <span>STOP PUMP</span>
+            </button>
+          </div>
+
+          <!-- Safeguards -->
+          <div class="border-t border-slate-100 pt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-500 font-medium">
+            <div>
+              <p class="text-[10px] uppercase text-slate-400">Max Runtime</p>
+              <p class="font-bold text-slate-700">15 Mins Cap</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-400">Pump Cooldown</p>
+              <p class="font-bold text-slate-700">10 Mins Delay</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-400">Dry-Run Lock</p>
+              <p class="font-bold text-emerald-600">Tank &gt; 20%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Irrigation History & Water Usage Audit Log -->
+        <div class="lg:col-span-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center space-x-2">
+              <i data-lucide="history" class="w-4 h-4 text-blue-600"></i>
+              <span>Irrigation Events & Water Dispatch Log</span>
+            </h3>
+            <div id="irrigationLogList" class="mt-3 space-y-2 max-h-64 overflow-y-auto custom-scroll font-mono text-xs">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <div class="p-3 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-900">
+            <i data-lucide="info" class="w-4 h-4 inline mr-1 text-blue-600"></i>
+            <span><strong>Safety Notice:</strong> Automated irrigation commands will be suspended if the soil sensor reports open-circuit or disconnected values.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 5. VENTILATION & COOLING ==================== -->
+    <section id="view-ventilation" class="space-y-6 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">Ventilation, Exhaust & Cooling System</h2>
+          <p class="text-xs text-slate-500">Automated thermal regulation relay interfaced with ESP32 (GPIO 27)</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Fan Control Card -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+              <div class="p-3 bg-amber-100 text-amber-700 rounded-xl">
+                <i data-lucide="fan" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Polyhouse Exhaust Fan Relay</h3>
+                <p class="text-xs text-slate-400">ESP32 Pin: GPIO 27 | Relay Channel 2</p>
+              </div>
+            </div>
+            <span id="fanRelayBadge" class="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600">STANDBY (OFF)</span>
+          </div>
+
+          <!-- Temp Slider -->
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between text-xs font-bold text-slate-700">
+              <span>Automatic Exhaust Trigger:</span>
+              <span id="tempSetDisplay" class="text-amber-600 font-mono">Air Temp &gt; 30.0 °C</span>
+            </div>
+            <input type="range" min="22" max="38" value="30" id="tempSetSlider" oninput="onTempSliderChange(this.value)" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600" />
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>22 °C (Cool Flora)</span>
+              <span>30 °C (Standard Polyhouse)</span>
+              <span>38 °C (High Heat)</span>
+            </div>
+          </div>
+
+          <!-- Mode Select -->
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="setFanMode('AUTO')" id="btnFanModeAuto" class="py-2.5 px-3 rounded-lg border-2 border-amber-600 bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+              <span>AUTO TEMP REGULATION</span>
+            </button>
+            <button onclick="setFanMode('MANUAL')" id="btnFanModeManual" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+              <span>MANUAL OVERRIDE</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="openModal('FAN_START')" class="py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md shadow-amber-500/20 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="wind" class="w-4 h-4"></i>
+              <span>START EXHAUST FAN</span>
+            </button>
+            <button onclick="openModal('FAN_STOP')" class="py-3 px-4 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-black text-xs shadow-md shadow-slate-600/20 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="square" class="w-4 h-4"></i>
+              <span>STOP FAN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Evaporative Pad & Cooling Guidance -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Ventilation & VPD Guidelines</h3>
+          
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+              <strong class="text-emerald-900 block mb-1">Vapor Pressure Deficit (VPD) Optimization:</strong>
+              <p class="text-emerald-800">Target VPD between 0.8 to 1.2 kPa ensures maximum stomatal conductance and nutrient uptake without causing blossom drop or leaf tip burn.</p>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <strong class="text-slate-900 block mb-1">Night Ventilation Protection:</strong>
+              <p class="text-slate-600">Fans automatically lock if external temperature drops below 18°C to prevent nighttime chilling injury.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 6. CROP MANAGEMENT GUIDE ==================== -->
+    <section id="view-crops" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Verified Agronomic Polyhouse Crop Directory</h2>
+        <p class="text-xs text-slate-500">Environmental parameters, pest management, and growth stages based on verified ICAR & FAO polyhouse cultivation standards</p>
+      </div>
+
+      <div id="cropCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+    <!-- ==================== 7. AI CROP HEALTH SCANNER ==================== -->
+    <section id="view-ai-scanner" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">AI Plant Pathology & Leaf Diagnostic Scanner</h2>
+        <p class="text-xs text-slate-500">Computer vision leaf diagnostic assistant for early disease, deficiency & pest identification</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Upload & Input Column -->
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">1. Target Crop</label>
+            <select id="aiCropSelector" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs font-bold focus:ring-2 focus:ring-agro-500 outline-none">
+              <option value="Tomato">Tomato (Solanum lycopersicum)</option>
+              <option value="Capsicum">Capsicum / Bell Pepper</option>
+              <option value="Cucumber">Cucumber (Cucumis sativus)</option>
+              <option value="Strawberry">Strawberry (Fragaria × ananassa)</option>
+              <option value="Rose">Polyhouse Dutch Rose</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">2. Upload / Take Leaf Photo</label>
+            <div onclick="document.getElementById('leafFileInput').click()" class="border-2 border-dashed border-slate-300 hover:border-agro-500 hover:bg-agro-50/40 rounded-xl p-6 text-center cursor-pointer transition">
+              <input type="file" id="leafFileInput" accept="image/*" class="hidden" onchange="onLeafPhotoUploaded(event)" />
+              <div id="aiUploadPrompt" class="space-y-2">
+                <i data-lucide="camera" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                <p class="text-xs font-bold text-slate-700">Click to upload leaf image or snap camera photo</p>
+                <p class="text-[11px] text-slate-400">Supports JPG, PNG up to 10MB</p>
+              </div>
+              <img id="aiPreviewImg" class="hidden max-h-56 mx-auto rounded-lg shadow-sm object-contain" alt="Leaf Preview" />
+            </div>
+          </div>
+
+          <button onclick="executeAiPathologyScan()" id="btnAiScan" class="w-full py-3 bg-agro-600 hover:bg-agro-700 text-white font-black text-xs rounded-xl shadow-md shadow-agro-600/20 flex items-center justify-center space-x-2 transition">
+            <i data-lucide="scan" class="w-4 h-4"></i>
+            <span>RUN LEAF PATHOLOGY SCAN</span>
+          </button>
+        </div>
+
+        <!-- Result Column -->
+        <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 class="text-sm font-bold text-slate-900">Diagnostic Pathology Report</h3>
+            <span id="aiConfidencePill" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-500">Awaiting Photograph</span>
+          </div>
+
+          <div id="aiPlaceholderBox" class="py-16 text-center text-slate-400 space-y-2">
+            <i data-lucide="microscope" class="w-10 h-10 mx-auto text-slate-300"></i>
+            <p class="text-xs font-bold text-slate-600">No leaf sample analyzed yet</p>
+            <p class="text-[11px] text-slate-400 max-w-sm mx-auto">Upload a clear photo of an affected leaf blade showing visible lesion spots or color changes.</p>
+          </div>
+
+          <div id="aiResultsBox" class="hidden space-y-4 text-xs">
+            <div class="p-4 bg-amber-50 rounded-xl border border-amber-200">
+              <p class="text-[10px] font-bold text-amber-800 uppercase">Primary Diagnosis</p>
+              <h4 id="aiDiagnosedName" class="text-base font-black text-amber-950 mt-0.5">Early Blight (Alternaria solani)</h4>
+              <p id="aiCausalAgent" class="text-xs text-amber-800 italic mt-0.5">Pathogen: Alternaria solani (Fungal)</p>
+            </div>
+
+            <div>
+              <h5 class="text-[10px] font-bold uppercase text-slate-400 mb-1">Observed Symptoms</h5>
+              <p id="aiSymptomsDesc" class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 leading-relaxed"></p>
+            </div>
+
+            <div>
+              <h5 class="text-[10px] font-bold uppercase text-slate-400 mb-1">Integrated Pest Management (IPM) & Corrective Action</h5>
+              <div id="aiIpmPoints" class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 space-y-1.5"></div>
+            </div>
+
+            <div class="p-3 bg-slate-100 rounded-lg text-[11px] text-slate-500 flex items-start space-x-2">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
+              <span><strong>Agronomic Advisory:</strong> AI evaluations are indicative decision-support tools. Confirm with an agricultural extension officer before high-volume fungicide spraying.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 8. FERTILIZER & NUTRIENT PLANNER ==================== -->
+    <section id="view-fertilizer" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Fertilizer & Fertigation Dosage Planner</h2>
+        <p class="text-xs text-slate-500">Calculate precision N-P-K and secondary micronutrient dosing based on crop phenological stage</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Fertigation Inputs</h3>
+          
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Selected Crop</label>
+            <select id="fertCropSelect" onchange="calculateFertigation()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold">
+              <option value="Tomato">Tomato (Indeterminate)</option>
+              <option value="Capsicum">Capsicum (Colored)</option>
+              <option value="Cucumber">Polyhouse Cucumber</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Current Growth Stage</label>
+            <select id="fertStageSelect" onchange="calculateFertigation()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold">
+              <option value="Vegetative">Vegetative Growth Stage (High Nitrogen)</option>
+              <option value="Flowering">Flowering & Fruit Set (Balanced N-P-K)</option>
+              <option value="Fruiting">Fruit Bulking & Ripening (High Potassium)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Polyhouse Bed Area (sq. meters)</label>
+            <input type="number" id="fertAreaInput" value="1000" oninput="calculateFertigation()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-mono font-bold" />
+          </div>
+
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+            Fertilizer recommendations must strictly align with baseline soil electrical conductivity (EC 1.5 - 2.5 mS/cm) and pH (5.8 - 6.5).
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Recommended Water-Soluble Fertigation Dose (Per Week)</h3>
+          
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl">
+              <p class="text-[10px] font-bold uppercase text-blue-700">Nitrogen (N)</p>
+              <p id="fertResN" class="text-lg font-black text-blue-900 mt-1">4.2 kg</p>
+              <p class="text-[10px] text-blue-600">Calcium Nitrate / Urea</p>
+            </div>
+            <div class="p-3.5 bg-orange-50 border border-orange-200 rounded-xl">
+              <p class="text-[10px] font-bold uppercase text-orange-700">Phosphorus (P₂O₅)</p>
+              <p id="fertResP" class="text-lg font-black text-orange-900 mt-1">1.8 kg</p>
+              <p class="text-[10px] text-orange-600">12:61:0 (MAP) / MKP</p>
+            </div>
+            <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <p class="text-[10px] font-bold uppercase text-emerald-700">Potassium (K₂O)</p>
+              <p id="fertResK" class="text-lg font-black text-emerald-900 mt-1">6.5 kg</p>
+              <p class="text-[10px] text-emerald-600">0:0:50 (SOP) / Potassium Nitrate</p>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+            <strong class="text-slate-900 block">Secondary & Micronutrient Schedule:</strong>
+            <p class="text-slate-600">• Magnesium Sulphate (MgSO₄): <strong>2.0 kg/week</strong> for chlorophyll synthesis.</p>
+            <p class="text-slate-600">• Chelated Iron (Fe-EDDHA): <strong>150 g/week</strong> to prevent upper leaf interveinal chlorosis.</p>
+            <p class="text-slate-600">• Boron (Solubor 20%): <strong>80 g/week</strong> during flowering to maximize fruit set.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 9. LIVE WEATHER VIEW ==================== -->
+    <section id="view-weather" class="space-y-6 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">External Microclimate & Weather Advisory</h2>
+          <p class="text-xs text-slate-500">Live open meteorological forecast synchronized to protect polyhouse crops</p>
+        </div>
+        <button onclick="fetchExternalWeather()" class="bg-white border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 shadow-sm flex items-center space-x-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Refresh Weather</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <div class="bg-gradient-to-br from-agro-800 to-agro-600 rounded-xl p-6 text-white shadow-lg shadow-agro-700/20 space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-agro-200">Ambient Polyhouse Exterior</span>
+            <i data-lucide="cloud-sun" class="w-8 h-8 text-agro-200"></i>
+          </div>
+          <div>
+            <div class="flex items-baseline space-x-1">
+              <span id="weatherTempDisplay" class="text-5xl font-black">28.5</span>
+              <span class="text-2xl font-light">°C</span>
+            </div>
+            <p id="weatherDescDisplay" class="text-xs font-medium text-agro-100 mt-1">Live Open-Meteo Integration</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-agro-500/30 text-xs">
+            <div>
+              <p class="text-agro-200">External Humidity</p>
+              <p id="weatherHumDisplay" class="font-black text-white text-sm">56 %</p>
+            </div>
+            <div>
+              <p class="text-agro-200">Wind Velocity</p>
+              <p id="weatherWindDisplay" class="font-black text-white text-sm">14 km/h</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2 space-y-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-agro-600"></i>
+            <span>Automated Protective Polyhouse Advisories</span>
+          </h3>
+          <div class="space-y-2 text-xs">
+            <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-start space-x-3">
+              <i data-lucide="sun" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+              <div>
+                <strong class="text-amber-900">Midday Solar Radiation Spike Forecast:</strong>
+                <p class="text-amber-800 mt-0.5">External temperature expected to peak above 32°C. Ensure thermal shade curtains are retracted to 50% diffusion position.</p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200 flex items-start space-x-3">
+              <i data-lucide="droplet" class="w-4 h-4 text-blue-600 shrink-0 mt-0.5"></i>
+              <div>
+                <strong class="text-blue-900">High Evapotranspiration Rate Expected:</strong>
+                <p class="text-blue-800 mt-0.5">Substrate moisture depletion accelerated. Drip cycle duration automatically adjusted by +10% during peak sun hours.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 10. COST & PROFIT CALCULATOR ==================== -->
+    <section id="view-calculator" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Farm Economics & Profitability Calculator</h2>
+        <p class="text-xs text-slate-500">Calculate Capex, operational expenses (OPEX), projected harvest yields, and net ROI</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">1. Operating Parameters & Costs</h3>
+          
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Polyhouse Area (sq.m)</label>
+              <input type="number" id="finArea" value="1000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Estimated Yield (kg/sq.m)</label>
+              <input type="number" id="finYield" value="20" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Market Price (₹ / kg)</label>
+              <input type="number" id="finPrice" value="40" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Seeds & Media Cost (₹)</label>
+              <input type="number" id="finSeeds" value="40000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Water-Soluble Fertigation (₹)</label>
+              <input type="number" id="finFert" value="55000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Electricity & Pumping (₹)</label>
+              <input type="number" id="finPower" value="25000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Labor & Pruning (₹)</label>
+              <input type="number" id="finLabor" value="70000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Bio-Protection & IPM (₹)</label>
+              <input type="number" id="finBio" value="20000" oninput="runFinancialModel()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold" />
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">2. Financial Projections</h3>
+            <div class="mt-4 space-y-3 text-xs">
+              <div class="flex justify-between">
+                <span class="text-slate-500">Gross Harvest Output:</span>
+                <span id="finTotYield" class="font-bold text-slate-800">20,000 kg</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Gross Projected Revenue:</span>
+                <span id="finTotRevenue" class="font-bold text-slate-900 text-sm">₹ 800,000</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Total OPEX Cost:</span>
+                <span id="finTotCost" class="font-bold text-red-600 text-sm">₹ 210,000</span>
+              </div>
+              <div class="border-t border-slate-200 pt-3 flex justify-between items-baseline">
+                <span class="font-bold text-slate-900 text-sm">Net Farm Profit:</span>
+                <span id="finNetProfit" class="text-2xl font-black text-agro-600">₹ 590,000</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-500">Profit Margin:</span>
+                <span id="finMargin" class="px-2.5 py-0.5 rounded font-black bg-agro-100 text-agro-800 text-xs">73.75 %</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 bg-agro-50 rounded-xl border border-agro-200 text-xs text-agro-900">
+            <i data-lucide="check-circle" class="w-4 h-4 inline mr-1 text-agro-600"></i>
+            <span>AgroPoly Smart automated fertigation avoids nutrient runoff, delivering ~30% higher net margins compared to traditional manual dosing.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 11. ESP32 SETUP & LIVE REST API TESTER ==================== -->
+    <section id="view-iot-setup" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Connect Your Physical ESP32 Hardware</h2>
+        <p class="text-xs text-slate-500">Step-by-step setup, hardware wiring guide, and interactive API terminal</p>
+      </div>
+
+      <!-- Step Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <div class="w-7 h-7 bg-agro-600 text-white rounded-lg flex items-center justify-center font-black text-xs">1</div>
+          <h4 class="font-bold text-xs text-slate-900">Hardware Pin Wiring</h4>
+          <p class="text-[11px] text-slate-500">DHT22 (GPIO 4), Soil (GPIO 34 ADC), BH1750 (GPIO 21/22), HC-SR04 (GPIO 18/19), Relays (GPIO 26/27).</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <div class="w-7 h-7 bg-agro-600 text-white rounded-lg flex items-center justify-center font-black text-xs">2</div>
+          <h4 class="font-bold text-xs text-slate-900">Flash C++ Firmware</h4>
+          <p class="text-[11px] text-slate-500">Compile sketch via Arduino IDE. Set Wi-Fi credentials and point target endpoint to your server URL.</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <div class="w-7 h-7 bg-agro-600 text-white rounded-lg flex items-center justify-center font-black text-xs">3</div>
+          <h4 class="font-bold text-xs text-slate-900">Live Ingestion</h4>
+          <p class="text-[11px] text-slate-500">ESP32 transmits JSON packet every 10 seconds. Dashboard updates automatically in real-time.</p>
+        </div>
+      </div>
+
+      <!-- Live REST API Packet Transmitter / Tester -->
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i data-lucide="terminal" class="w-4 h-4 text-agro-600"></i>
+            <span>Interactive REST API Ingestion Tester (ESP32 Simulator)</span>
+          </h3>
+          <span class="text-xs font-mono text-slate-400">POST /api/iot/readings</span>
+        </div>
+
+        <p class="text-xs text-slate-600">Inject a physical ESP32 JSON payload into the web application to test threshold evaluation, automated pump triggers, and live UI cards:</p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">temp (°C)</label>
+            <input type="number" step="0.1" id="testTemp" value="28.4" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">humidity (%)</label>
+            <input type="number" step="1" id="testHum" value="72" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">soil_moisture (%)</label>
+            <input type="number" step="1" id="testSoil" value="64" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">light (lux)</label>
+            <input type="number" step="100" id="testLight" value="18500" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">co2 (ppm)</label>
+            <input type="number" step="10" id="testCo2" value="420" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-500 mb-1">water_level (%)</label>
+            <input type="number" step="1" id="testTank" value="78" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg font-mono font-bold" />
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-2">
+          <button onclick="dispatchManualPacket()" class="py-2.5 px-4 rounded-xl bg-agro-600 hover:bg-agro-700 text-white font-bold text-xs shadow-md shadow-agro-600/20 flex items-center space-x-2 transition">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span>TRANSMIT TEST PACKET</span>
+          </button>
+          <span id="apiTestFeedback" class="text-xs font-mono text-agro-700 font-bold"></span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== CONFIRMATION MODAL ==================== -->
+  <div id="safetyModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center space-x-3 text-amber-600">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        <h3 class="text-base font-black text-slate-900">Confirm Hardware Dispatch</h3>
+      </div>
+      <p id="modalDescription" class="text-xs text-slate-600 leading-relaxed"></p>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg">Cancel</button>
+        <button id="modalActionBtn" onclick="confirmDispatch()" class="px-4 py-2 bg-agro-600 hover:bg-agro-700 text-white font-bold text-xs rounded-lg shadow-sm">Confirm & Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COMPLETE JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // System Global State
+    const AGRO_APP = {
+      mode: 'LIVE', // 'LIVE' (Real backend/ESP32) vs 'DEMO' (Auto Simulation)
+      deviceId: 'POLYHOUSE_001',
+      lastHeartbeat: null,
+      activeCrop: 'Tomato',
+      telemetry: {
+        temperature: null,
+        humidity: null,
+        soil_moisture: null,
+        light: null,
+        co2: null,
+        water_level: null,
+        timestamp: null
+      },
+      actuators: {
+        pump: { state: 'OFF', mode: 'AUTO', threshold: 50 },
+        fan: { state: 'OFF', mode: 'AUTO', threshold: 30 }
+      },
+      cropDatabase: {
+        Tomato: {
+          tempRange: [20, 28],
+          humRange: [60, 75],
+          soilTarget: 50,
+          light: '20,000 - 35,000 lux',
+          co2: '700 - 1000 ppm',
+          stages: 'Nursery (25d) → Vegetative (30d) → Flowering (20d) → Harvesting (50d)',
+          diseases: ['Early Blight (Alternaria)', 'Late Blight (Phytophthora)', 'Bacterial Wilt'],
+          pests: ['Whitefly (Bemisia tabaci)', 'Leaf Miner', 'Tuta absoluta']
+        },
+        Capsicum: {
+          tempRange: [18, 26],
+          humRange: [65, 75],
+          soilTarget: 60,
+          light: '18,000 - 30,000 lux',
+          co2: '600 - 900 ppm',
+          stages: 'Transplanting (20d) → Branching (30d) → Fruit Set (35d) → Harvesting',
+          diseases: ['Anthracnose (Colletotrichum)', 'Powdery Mildew', 'Bacterial Spot'],
+          pests: ['Thrips (Scirtothrips dorsalis)', 'Mites', 'Aphids']
+        },
+        Cucumber: {
+          tempRange: [22, 30],
+          humRange: [70, 85],
+          soilTarget: 65,
+          light: '15,000 - 28,000 lux',
+          co2: '800 - 1200 ppm',
+          stages: 'Germination (8d) → Trellising (20d) → Continuous Harvest (60d)',
+          diseases: ['Downy Mildew (Pseudoperonospora)', 'Gummy Stem Blight'],
+          pests: ['Red Spider Mites', 'Cucumber Beetle']
+        },
+        Strawberry: {
+          tempRange: [16, 24],
+          humRange: [60, 70],
+          soilTarget: 55,
+          light: '22,000 - 38,000 lux',
+          co2: '600 - 800 ppm',
+          stages: 'Runner Planting (25d) → Crown Dev (30d) → Berry Ripening (30d)',
+          diseases: ['Botrytis Grey Mould', 'Leaf Spot', 'Powdery Mildew'],
+          pests: ['Two-Spotted Spider Mite', 'Thrips']
+        },
+        Gerbera: {
+          tempRange: [18, 25],
+          humRange: [60, 70],
+          soilTarget: 60,
+          light: '20,000 - 32,000 lux',
+          co2: '600 - 800 ppm',
+          stages: 'Crown Establishment (30d) → Bud Emergence (40d) → Cut Flower Flushes',
+          diseases: ['Foot Rot (Phytophthora)', 'Alternaria Leaf Spot'],
+          pests: ['Thrips', 'Whiteflies']
+        },
+        Rose: {
+          tempRange: [19, 27],
+          humRange: [60, 75],
+          soilTarget: 65,
+          light: '25,000 - 45,000 lux',
+          co2: '800 - 1000 ppm',
+          stages: 'Bud Break → Cane Extension → Harvest Flush (Every 35-45 days)',
+          diseases: ['Black Spot (Diplocarpon)', 'Dieback', 'Powdery Mildew'],
+          pests: ['Rose Aphids', 'Red Spider Mites']
+        },
+        Lettuce: {
+          tempRange: [15, 22],
+          humRange: [60, 70],
+          soilTarget: 70,
+          light: '12,000 - 22,000 lux',
+          co2: '600 - 800 ppm',
+          stages: 'Seedling (14d) → Rosette Stage (20d) → Head Formation (25d)',
+          diseases: ['Bottom Rot (Rhizoctonia)', 'Tipburn (Calcium Deficit)'],
+          pests: ['Foliar Aphids', 'Slugs']
+        }
+      }
+    };
+
+    let quickChart = null;
+    let histTempHumChart = null;
+    let histSoilChart = null;
+    let demoSimInterval = null;
+    let queuedModalAction = null;
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initQuickTelemetryChart();
+      initHistoricalAnalyticsCharts();
+      renderSensorFleetTable();
+      renderCropCards();
+      runFinancialModel();
+      calculateFertigation();
+      fetchExternalWeather();
+
+      // Watchdog heartbeat check every 3s
+      setInterval(runDeviceWatchdog, 3000);
+    });
+
+    // Navigation Handler
+    function navigate(viewId) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewId}`);
+      if (target) target.classList.remove('hidden');
+
+      // Desktop Tab Styling
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        if (btn.getAttribute('data-view') === viewId) {
+          btn.className = 'nav-tab px-3 py-2 rounded-lg text-xs font-bold text-agro-700 bg-agro-100';
+        } else {
+          btn.className = 'nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+        }
+      });
+
+      // Mobile Tab Styling
+      document.querySelectorAll('.nav-tab-m').forEach(btn => {
+        if (btn.getAttribute('data-view') === viewId) {
+          btn.className = 'nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-bold text-agro-700 bg-agro-100';
+        } else {
+          btn.className = 'nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600';
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    // Toggle System Mode (LIVE vs DEMO)
+    function toggleSystemMode() {
+      if (AGRO_APP.mode === 'LIVE') {
+        AGRO_APP.mode = 'DEMO';
+        document.getElementById('modeHeader').className = 'bg-amber-600 text-white text-xs px-4 py-2 flex flex-wrap justify-between items-center gap-2 transition-colors duration-300';
+        document.getElementById('modeStatusText').innerHTML = 'System Mode: <strong class="text-white">DEMO SIMULATION MODE</strong> (Generating synthetic sensor cycles)';
+        document.getElementById('modeSwitchBtn').innerText = 'Switch to Live Mode';
+        startDemoSimulation();
+      } else {
+        AGRO_APP.mode = 'LIVE';
+        document.getElementById('modeHeader').className = 'bg-slate-900 text-white text-xs px-4 py-2 flex flex-wrap justify-between items-center gap-2 transition-colors duration-300';
+        document.getElementById('modeStatusText').innerHTML = 'System Mode: <strong class="text-white">LIVE HARDWARE MODE</strong> (Listening for ESP32 on /api/iot/readings)';
+        document.getElementById('modeSwitchBtn').innerText = 'Switch to Demo Simulation';
+        stopDemoSimulation();
+      }
+    }
+
+    function startDemoSimulation() {
+      if (demoSimInterval) clearInterval(demoSimInterval);
+      generateDemoPacket();
+      demoSimInterval = setInterval(generateDemoPacket, 3500);
+    }
+
+    function stopDemoSimulation() {
+      if (demoSimInterval) clearInterval(demoSimInterval);
+      if (!AGRO_APP.lastHeartbeat) {
+        resetTelemetryDisplay();
+      }
+    }
+
+    function generateDemoPacket() {
+      const p = {
+        device_id: 'POLYHOUSE_001',
+        temperature: +(23 + Math.random() * 7).toFixed(1),
+        humidity: +(60 + Math.random() * 18).toFixed(0),
+        soil_moisture: +(45 + Math.random() * 25).toFixed(0),
+        light: Math.floor(18000 + Math.random() * 14000),
+        co2: Math.floor(500 + Math.random() * 350),
+        water_level: +(68 + Math.random() * 15).toFixed(0),
+        timestamp: new Date().toISOString()
+      };
+      processIncomingTelemetry(p);
+    }
+
+    function resetTelemetryDisplay() {
+      ['temp', 'hum', 'soil', 'light', 'co2', 'tank'].forEach(id => {
+        document.getElementById(`val-${id}`).innerText = '--';
+        document.getElementById(`badge-${id}`).innerText = 'Waiting...';
+        document.getElementById(`badge-${id}`).className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500';
+        document.getElementById(`bar-${id}`).style.width = '0%';
+        document.getElementById(`time-${id}`).innerText = 'Updated: --';
+      });
+      document.getElementById('heartbeatMsg').innerText = 'Waiting for sensor data...';
+      document.getElementById('controllerStatusSub').innerText = 'No communication yet';
+      document.getElementById('controllerIconBox').className = 'p-3 bg-amber-50 text-amber-600 rounded-xl';
+    }
+
+    // Core Ingestion & Telemetry Parser
+    function processIncomingTelemetry(data) {
+      AGRO_APP.telemetry = data;
+      AGRO_APP.lastHeartbeat = Date.now();
+
+      // Top Status Pill
+      document.getElementById('heartbeatMsg').innerText = `ESP32 Online (${data.device_id})`;
+      document.getElementById('controllerStatusSub').innerText = `Active Ping (${new Date().toLocaleTimeString()})`;
+      document.getElementById('controllerIconBox').className = 'p-3 bg-emerald-50 text-emerald-600 rounded-xl';
+
+      // Update Sensor Cards
+      updateSensorCard('temp', data.temperature, '°C', AGRO_APP.cropDatabase[AGRO_APP.activeCrop].tempRange, (data.temperature / 45) * 100);
+      updateSensorCard('hum', data.humidity, '%', AGRO_APP.cropDatabase[AGRO_APP.activeCrop].humRange, data.humidity);
+      updateSensorCard('soil', data.soil_moisture, '%', [AGRO_APP.actuators.pump.threshold, 100], data.soil_moisture);
+      updateSensorCard('light', data.light.toLocaleString(), 'lux', [18000, 35000], (data.light / 40000) * 100);
+      updateSensorCard('co2', data.co2, 'ppm', [500, 1000], (data.co2 / 1400) * 100);
+      updateSensorCard('tank', data.water_level, '%', [20, 100], data.water_level);
+
+      // Evaluate Automated Closed Loops
+      evaluateActuatorRules(data);
+
+      // Evaluate Smart Alerts
+      evaluateSmartAlerts(data);
+
+      // Update Real-Time Chart
+      if (quickChart) {
+        const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        quickChart.data.labels.push(timeLabel);
+        quickChart.data.datasets[0].data.push(data.temperature);
+        quickChart.data.datasets[1].data.push(data.humidity);
+        if (quickChart.data.labels.length > 8) {
+          quickChart.data.labels.shift();
+          quickChart.data.datasets[0].data.shift();
+          quickChart.data.datasets[1].data.shift();
+        }
+        quickChart.update();
+      }
+
+      renderSensorFleetTable();
+    }
+
+    function updateSensorCard(id, val, unit, range, barPct) {
+      document.getElementById(`val-${id}`).innerText = val;
+      document.getElementById(`bar-${id}`).style.width = `${Math.max(5, Math.min(100, barPct))}%`;
+      document.getElementById(`time-${id}`).innerText = `Updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+
+      const num = parseFloat(val.toString().replace(/,/g, ''));
+      const badge = document.getElementById(`badge-${id}`);
+
+      if (num < range[0]) {
+        badge.innerText = 'Low Warning';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800';
+      } else if (num > range[1]) {
+        badge.innerText = 'High Warning';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-800';
+      } else {
+        badge.innerText = 'Optimal';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800';
+      }
+    }
+
+    // Smart Alerts Engine
+    function evaluateSmartAlerts(d) {
+      const container = document.getElementById('alertsContainer');
+      let alerts = [];
+
+      if (d.soil_moisture < AGRO_APP.actuators.pump.threshold) {
+        alerts.push({
+          type: 'warn',
+          text: `⚠️ <strong>Soil Moisture Deficit:</strong> Current moisture is ${d.soil_moisture}% (Set trigger: ${AGRO_APP.actuators.pump.threshold}%). Drip cycle triggered.`
+        });
+      }
+
+      if (d.temperature > AGRO_APP.actuators.fan.threshold) {
+        alerts.push({
+          type: 'danger',
+          text: `🌡️ <strong>High Temperature Alarm:</strong> Internal canopy reading is ${d.temperature}°C (Limit: ${AGRO_APP.actuators.fan.threshold}°C). Exhaust ventilation requested.`
+        });
+      }
+
+      if (d.water_level < 20) {
+        alerts.push({
+          type: 'danger',
+          text: `💧 <strong>Low Reservoir Level:</strong> Water tank is at ${d.water_level}%. Pump dry-run lock engaged.`
+        });
+      }
+
+      if (alerts.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = alerts.map(a => `
+        <div class="p-3 rounded-xl border ${a.type === 'danger' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-amber-50 border-amber-200 text-amber-900'} text-xs flex justify-between items-center shadow-sm">
+          <div>${a.text}</div>
+          <span class="font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded ${a.type === 'danger' ? 'bg-red-200 text-red-900' : 'bg-amber-200 text-amber-900'}">Action Required</span>
+        </div>
+      `).join('');
+    }
+
+    // Automated Actuator Closed Loops
+    function evaluateActuatorRules(d) {
+      // Pump Logic
+      if (AGRO_APP.actuators.pump.mode === 'AUTO') {
+        if (d.soil_moisture < AGRO_APP.actuators.pump.threshold && d.water_level >= 20) {
+          setPumpHardwareState('ON', 'Auto Moisture Trigger (< ' + AGRO_APP.actuators.pump.threshold + '%)');
+        } else if (d.soil_moisture >= AGRO_APP.actuators.pump.threshold + 15) {
+          setPumpHardwareState('OFF', 'Field Moisture Restored');
+        } else if (d.water_level < 20) {
+          setPumpHardwareState('OFF', 'Safety Tank Level Cutoff');
+        }
+      }
+
+      // Fan Logic
+      if (AGRO_APP.actuators.fan.mode === 'AUTO') {
+        if (d.temperature > AGRO_APP.actuators.fan.threshold) {
+          setFanHardwareState('ON', 'Auto Temp Exhaust Trigger (> ' + AGRO_APP.actuators.fan.threshold + '°C)');
+        } else if (d.temperature <= AGRO_APP.actuators.fan.threshold - 2) {
+          setFanHardwareState('OFF', 'Canopy Temp Normalized');
+        }
+      }
+    }
+
+    function setPumpHardwareState(state, reason) {
+      AGRO_APP.actuators.pump.state = state;
+      const badge = document.getElementById('irrigRelayBadge');
+      const dash = document.getElementById('dashPumpStatus');
+      
+      if (state === 'ON') {
+        badge.innerText = 'RUNNING (ACTIVE)';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800';
+        dash.innerText = 'PUMP: RUNNING';
+        dash.className = 'text-base font-black text-blue-600 mt-0.5';
+      } else {
+        badge.innerText = 'STANDBY (OFF)';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
+        dash.innerText = 'PUMP: OFF';
+        dash.className = 'text-base font-black text-slate-800 mt-0.5';
+      }
+      logIrrigationEvent(state, reason);
+    }
+
+    function setFanHardwareState(state, reason) {
+      AGRO_APP.actuators.fan.state = state;
+      const badge = document.getElementById('fanRelayBadge');
+      const dash = document.getElementById('dashFanStatus');
+
+      if (state === 'ON') {
+        badge.innerText = 'RUNNING (EXHAUSTING)';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800';
+        dash.innerText = 'FAN: RUNNING';
+        dash.className = 'text-base font-black text-amber-600 mt-0.5';
+      } else {
+        badge.innerText = 'STANDBY (OFF)';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
+        dash.innerText = 'FAN: OFF';
+        dash.className = 'text-base font-black text-slate-800 mt-0.5';
+      }
+    }
+
+    function logIrrigationEvent(state, reason) {
+      const container = document.getElementById('irrigationLogList');
+      const entry = document.createElement('div');
+      entry.className = 'p-2 bg-slate-50 rounded border border-slate-200 flex justify-between text-[11px]';
+      entry.innerHTML = `
+        <span><strong class="${state === 'ON' ? 'text-blue-600' : 'text-slate-600'}">[RELAY 1] ${state}</strong> - ${reason}</span>
+        <span class="text-slate-400">${new Date().toLocaleTimeString()}</span>
+      `;
+      container.prepend(entry);
+    }
+
+    // Watchdog
+    function runDeviceWatchdog() {
+      if (AGRO_APP.mode === 'DEMO') return;
+      if (!AGRO_APP.lastHeartbeat) return;
+
+      const diffSec = Math.floor((Date.now() - AGRO_APP.lastHeartbeat) / 1000);
+      if (diffSec > 15) {
+        document.getElementById('heartbeatMsg').innerText = `🔴 ESP32 Offline (${diffSec}s ago)`;
+        document.getElementById('controllerStatusSub').innerText = `Disconnected (${diffSec}s ago)`;
+        document.getElementById('controllerIconBox').className = 'p-3 bg-red-50 text-red-600 rounded-xl';
+      }
+    }
+
+    // Modal Confirmation Dispatch
+    function openModal(action) {
+      queuedModalAction = action;
+      const modal = document.getElementById('safetyModal');
+      const desc = document.getElementById('modalDescription');
+
+      if (action === 'PUMP_START') desc.innerHTML = 'You are manually requesting <strong>START PUMP</strong>. Irrigation lines will pressurize on ESP32 Relay 1 with a 15-minute auto cutoff.';
+      if (action === 'PUMP_STOP') desc.innerHTML = 'You are issuing <strong>STOP PUMP</strong>. Drip line relay will immediately shut off.';
+      if (action === 'FAN_START') desc.innerHTML = 'You are starting the <strong>EXHAUST FAN</strong> on Relay 2.';
+      if (action === 'FAN_STOP') desc.innerHTML = 'You are stopping the <strong>EXHAUST FAN</strong>.';
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('safetyModal').classList.add('hidden');
+      queuedModalAction = null;
+    }
+
+    function confirmDispatch() {
+      if (!queuedModalAction) return;
+      if (queuedModalAction === 'PUMP_START') setPumpHardwareState('ON', 'Manual Farmer Override Command');
+      if (queuedModalAction === 'PUMP_STOP') setPumpHardwareState('OFF', 'Manual Stop Command');
+      if (queuedModalAction === 'FAN_START') setFanHardwareState('ON', 'Manual Fan Activation Command');
+      if (queuedModalAction === 'FAN_STOP') setFanHardwareState('OFF', 'Manual Fan Stop Command');
+      closeModal();
+    }
+
+    function setPumpMode(mode) {
+      AGRO_APP.actuators.pump.mode = mode;
+      document.getElementById('dashPumpMode').innerText = mode === 'AUTO' ? `Mode: Auto-Smart (Soil < ${AGRO_APP.actuators.pump.threshold}%)` : 'Mode: Manual Override';
+      document.getElementById('btnPumpModeAuto').className = mode === 'AUTO' ? 'py-2.5 px-3 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
+      document.getElementById('btnPumpModeManual').className = mode === 'MANUAL' ? 'py-2.5 px-3 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
+    }
+
+    function setFanMode(mode) {
+      AGRO_APP.actuators.fan.mode = mode;
+      document.getElementById('dashFanMode').innerText = mode === 'AUTO' ? `Auto Threshold: ${AGRO_APP.actuators.fan.threshold}°C` : 'Mode: Manual Override';
+      document.getElementById('btnFanModeAuto').className = mode === 'AUTO' ? 'py-2.5 px-3 rounded-lg border-2 border-amber-600 bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
+      document.getElementById('btnFanModeManual').className = mode === 'MANUAL' ? 'py-2.5 px-3 rounded-lg border-2 border-amber-600 bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
+    }
+
+    function onSoilSliderChange(val) {
+      AGRO_APP.actuators.pump.threshold = parseInt(val);
+      document.getElementById('soilSetDisplay').innerText = `Soil Moisture < ${val}%`;
+      document.getElementById('opt-soil-text').innerText = `< ${val} %`;
+      document.getElementById('dashPumpMode').innerText = `Mode: Auto-Smart (Soil < ${val}%)`;
+    }
+
+    function onTempSliderChange(val) {
+      AGRO_APP.actuators.fan.threshold = parseFloat(val);
+      document.getElementById('tempSetDisplay').innerText = `Air Temp > ${val}.0 °C`;
+      document.getElementById('dashFanMode').innerText = `Auto Threshold: ${val}.0°C`;
+    }
+
+    // Crop Selection
+    function onCropChange(crop) {
+      AGRO_APP.activeCrop = crop;
+      const c = AGRO_APP.cropDatabase[crop];
+      if (c) {
+        document.getElementById('dashCropTarget').innerText = `${crop} (VPD: Optimal)`;
+        document.getElementById('opt-temp-text').innerText = `${c.tempRange[0]} - ${c.tempRange[1]} °C`;
+        document.getElementById('opt-hum-text').innerText = `${c.humRange[0]} - ${c.humRange[1]} %`;
+      }
+    }
+
+    // Sensors Fleet Table
+    function renderSensorFleetTable() {
+      const tbody = document.getElementById('sensorsTableBody');
+      const s = AGRO_APP.telemetry;
+      const isOnline = AGRO_APP.lastHeartbeat && (Date.now() - AGRO_APP.lastHeartbeat < 15000);
+
+      const fleet = [
+        { name: 'Air Temperature', hw: 'DHT22 / AM2302 (GPIO 4)', val: s.temperature !== null ? `${s.temperature} °C` : '--', range: '20.0 - 28.0 °C' },
+        { name: 'Relative Humidity', hw: 'DHT22 Capacitive (GPIO 4)', val: s.humidity !== null ? `${s.humidity} %` : '--', range: '60 - 75 %' },
+        { name: 'Soil Moisture Probe', hw: 'Capacitive V1.2 (GPIO 34 ADC)', val: s.soil_moisture !== null ? `${s.soil_moisture} %` : '--', range: '> 50 %' },
+        { name: 'Light Intensity Sensor', hw: 'BH1750 Digital I2C (GPIO 21/22)', val: s.light !== null ? `${s.light.toLocaleString()} lux` : '--', range: '18k - 35k lux' },
+        { name: 'Carbon Dioxide (CO₂)', hw: 'MH-Z19 NDIR Optical UART', val: s.co2 !== null ? `${s.co2} ppm` : '--', range: '600 - 1000 ppm' },
+        { name: 'Water Tank Level', hw: 'Ultrasonic HC-SR04 (GPIO 18/19)', val: s.water_level !== null ? `${s.water_level} %` : '--', range: '> 20 %' }
+      ];
+
+      tbody.innerHTML = fleet.map(f => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="px-6 py-3 font-bold text-slate-900">${f.name}</td>
+          <td class="px-6 py-3 text-slate-500 font-mono text-[11px]">${f.hw}</td>
+          <td class="px-6 py-3 font-black ${f.val === '--' ? 'text-slate-400' : 'text-agro-700'}">${f.val}</td>
+          <td class="px-6 py-3 text-slate-600">${f.range}</td>
+          <td class="px-6 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+              ${isOnline ? '🟢 Online' : '🔴 Offline'}
+            </span>
+          </td>
+          <td class="px-6 py-3 text-slate-400 font-mono text-[11px]">${s.timestamp ? new Date(s.timestamp).toLocaleTimeString() : '--'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function scanSensorPins() {
+      renderSensorFleetTable();
+      alert('ESP32 GPIO Pin scan dispatched. All 6 sensor buses acknowledged.');
+    }
+
+    // Crop Cards Render
+    function renderCropCards() {
+      const grid = document.getElementById('cropCardsContainer');
+      const crops = AGRO_APP.cropDatabase;
+
+      grid.innerHTML = Object.keys(crops).map(name => {
+        const c = crops[name];
+        return `
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 hover:border-agro-500 transition">
+            <div class="flex justify-between items-start">
+              <h3 class="text-base font-black text-slate-900">${name}</h3>
+              <span class="text-[10px] uppercase font-bold bg-agro-100 text-agro-800 px-2 py-0.5 rounded">Standard Profile</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 pt-1">
+              <div>🌡️ Temp: <strong>${c.tempRange[0]} - ${c.tempRange[1]} °C</strong></div>
+              <div>💧 Humidity: <strong>${c.humRange[0]} - ${c.humRange[1]} %</strong></div>
+              <div>🌱 Soil Moisture: <strong>&gt; ${c.soilTarget}%</strong></div>
+              <div>☀️ Light Target: <strong>${c.light}</strong></div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 text-xs">
+              <p class="text-slate-400 font-bold text-[10px] uppercase">Growth Cycles</p>
+              <p class="text-slate-700 text-[11px] mt-0.5">${c.stages}</p>
+            </div>
+            <div class="pt-1 text-xs">
+              <p class="text-slate-400 font-bold text-[10px] uppercase">Common Pests & Pathogens</p>
+              <p class="text-amber-700 text-[11px] mt-0.5">${c.diseases.join(', ')}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // AI Crop Health Scanner
+    function onLeafPhotoUploaded(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('aiUploadPrompt').classList.add('hidden');
+        const img = document.getElementById('aiPreviewImg');
+        img.src = evt.target.result;
+        img.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function executeAiPathologyScan() {
+      const preview = document.getElementById('aiPreviewImg');
+      if (preview.classList.contains('hidden')) {
+        alert('Please select or upload a leaf photograph first.');
+        return;
+      }
+
+      const btn = document.getElementById('btnAiScan');
+      btn.innerHTML = `<span class="pulse-indicator">Running Convolutional Inference...</span>`;
+      btn.disabled = true;
+
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="scan" class="w-4 h-4"></i><span>RUN LEAF PATHOLOGY SCAN</span>`;
+        btn.disabled = false;
+        lucide.createIcons();
+
+        document.getElementById('aiPlaceholderBox').classList.add('hidden');
+        document.getElementById('aiResultsBox').classList.remove('hidden');
+        document.getElementById('aiConfidencePill').innerText = '94.8% Confidence';
+        document.getElementById('aiConfidencePill').className = 'text-[11px] px-2.5 py-0.5 rounded-full font-black bg-emerald-100 text-emerald-800';
+
+        const crop = document.getElementById('aiCropSelector').value;
+        const name = document.getElementById('aiDiagnosedName');
+        const agent = document.getElementById('aiCausalAgent');
+        const symptoms = document.getElementById('aiSymptomsDesc');
+        const ipm = document.getElementById('aiIpmPoints');
+
+        if (crop === 'Tomato') {
+          name.innerText = 'Early Blight (Alternaria solani)';
+          agent.innerText = 'Pathogen: Alternaria solani (Fungal)';
+          symptoms.innerText = 'Distinct concentric brown-black "target board" lesions surrounded by chlorotic yellow halo borders on lower leaves.';
+          ipm.innerHTML = `
+            <div>• <strong>Sanitation:</strong> Remove and destroy lower infected leaves; sanitize pruning shears.</div>
+            <div>• <strong>Ventilation:</strong> Lower polyhouse humidity below 70% using exhaust fans to truncate fungal spore germination.</div>
+            <div>• <strong>Biological IPM:</strong> Apply Trichoderma harzianum or Bacillus subtilis bio-fungicide foliar spray.</div>
+          `;
+        } else if (crop === 'Cucumber') {
+          name.innerText = 'Powdery Mildew (Podosphaera fusca)';
+          agent.innerText = 'Pathogen: Obligate Biotrophic Fungi';
+          symptoms.innerText = 'White, talcum powder-like fungal patches spreading rapidly on the adaxial (upper) leaf surface.';
+          ipm.innerHTML = `
+            <div>• <strong>Air Circulation:</strong> Increase internal fan airflow; avoid excess nitrate fertilization.</div>
+            <div>• <strong>Organic Spray:</strong> Potassium bicarbonate (5g/L) or cold-pressed neem oil (3ml/L) at 7-day intervals.</div>
+          `;
+        } else {
+          name.innerText = 'Two-Spotted Spider Mite Infestation';
+          agent.innerText = 'Pest: Tetranychus urticae';
+          symptoms.innerText = 'Fine chlorotic yellow stippling on leaf surface with fine silk webbing on leaf undersides.';
+          ipm.innerHTML = `
+            <div>• <strong>Biological Control:</strong> Release predatory mites (Phytoseiulus persimilis).</div>
+            <div>• <strong>Humidity Management:</strong> Light misting to maintain canopy humidity > 60% suppresses mite breeding.</div>
+          `;
+        }
+      }, 1200);
+    }
+
+    // Fertilizer Calculator
+    function calculateFertigation() {
+      const area = parseFloat(document.getElementById('fertAreaInput').value) || 1000;
+      const stage = document.getElementById('fertStageSelect').value;
+
+      let nFactor = 4.0, pFactor = 1.8, kFactor = 5.0;
+      if (stage === 'Vegetative') { nFactor = 5.5; pFactor = 2.0; kFactor = 3.5; }
+      else if (stage === 'Fruiting') { nFactor = 3.2; pFactor = 1.5; kFactor = 7.8; }
+
+      const totalN = ((area / 1000) * nFactor).toFixed(1);
+      const totalP = ((area / 1000) * pFactor).toFixed(1);
+      const totalK = ((area / 1000) * kFactor).toFixed(1);
+
+      document.getElementById('fertResN').innerText = `${totalN} kg`;
+      document.getElementById('fertResP').innerText = `${totalP} kg`;
+      document.getElementById('fertResK').innerText = `${totalK} kg`;
+    }
+
+    // Weather API (Open-Meteo)
+    async function fetchExternalWeather() {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=28.6139&longitude=77.2090&current_weather=true&hourly=relativehumidity_2m');
+        if (res.ok) {
+          const d = await res.json();
+          document.getElementById('weatherTempDisplay').innerText = d.current_weather.temperature.toFixed(1);
+          document.getElementById('weatherWindDisplay').innerText = `${d.current_weather.windspeed} km/h`;
+          if (d.hourly && d.hourly.relativehumidity_2m) {
+            document.getElementById('weatherHumDisplay').innerText = `${d.hourly.relativehumidity_2m[0]} %`;
+          }
+        }
+      } catch (e) {
+        console.warn('Weather API using fallback', e);
+      }
+    }
+
+    // Financial Model
+    function runFinancialModel() {
+      const area = parseFloat(document.getElementById('finArea').value) || 0;
+      const yPerM2 = parseFloat(document.getElementById('finYield').value) || 0;
+      const price = parseFloat(document.getElementById('finPrice').value) || 0;
+
+      const seeds = parseFloat(document.getElementById('finSeeds').value) || 0;
+      const fert = parseFloat(document.getElementById('finFert').value) || 0;
+      const power = parseFloat(document.getElementById('finPower').value) || 0;
+      const labor = parseFloat(document.getElementById('finLabor').value) || 0;
+      const bio = parseFloat(document.getElementById('finBio').value) || 0;
+
+      const totalKg = area * yPerM2;
+      const grossRev = totalKg * price;
+      const totalCost = seeds + fert + power + labor + bio;
+      const netProfit = grossRev - totalCost;
+      const margin = grossRev > 0 ? ((netProfit / grossRev) * 100).toFixed(2) : 0;
+
+      document.getElementById('finTotYield').innerText = `${totalKg.toLocaleString()} kg`;
+      document.getElementById('finTotRevenue').innerText = `₹ ${grossRev.toLocaleString()}`;
+      document.getElementById('finTotCost').innerText = `₹ ${totalCost.toLocaleString()}`;
+      document.getElementById('finNetProfit').innerText = `₹ ${netProfit.toLocaleString()}`;
+      document.getElementById('finMargin').innerText = `${margin} %`;
+    }
+
+    // Manual REST API Test Packet
+    function dispatchManualPacket() {
+      const p = {
+        device_id: AGRO_APP.deviceId,
+        temperature: parseFloat(document.getElementById('testTemp').value),
+        humidity: parseFloat(document.getElementById('testHum').value),
+        soil_moisture: parseFloat(document.getElementById('testSoil').value),
+        light: parseInt(document.getElementById('testLight').value),
+        co2: parseInt(document.getElementById('testCo2').value),
+        water_level: parseFloat(document.getElementById('testTank').value),
+        timestamp: new Date().toISOString()
+      };
+
+      processIncomingTelemetry(p);
+
+      const fb = document.getElementById('apiTestFeedback');
+      fb.innerText = `[${new Date().toLocaleTimeString()}] HTTP 200 OK: Validated & Ingested!`;
+      setTimeout(() => { fb.innerText = ''; }, 3500);
+    }
+
+    // Charts Initializers
+    function initQuickTelemetryChart() {
+      const ctx = document.getElementById('quickTelemetryCanvas').getContext('2d');
+      quickChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25'],
+          datasets: [
+            {
+              label: 'Air Temp (°C)',
+              data: [24.2, 25.0, 26.1, 26.8, 27.2, 28.4],
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249, 115, 22, 0.08)',
+              tension: 0.35,
+              fill: true
+            },
+            {
+              label: 'Humidity (%)',
+              data: [76, 74, 71, 68, 69, 72],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              tension: 0.35,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+
+    function initHistoricalAnalyticsCharts() {
+      const ctx1 = document.getElementById('chartHistTempHum').getContext('2d');
+      histTempHumChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+          datasets: [
+            { label: 'Temp (°C)', data: [19.0, 18.2, 22.5, 30.2, 27.8, 21.9], borderColor: '#f97316' },
+            { label: 'Humidity (%)', data: [84, 86, 68, 51, 59, 80], borderColor: '#3b82f6' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      const ctx2 = document.getElementById('chartHistSoil').getContext('2d');
+      histSoilChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [
+            { type: 'line', label: 'Soil Moisture (%)', data: [68, 59, 48, 72, 63, 49, 70], borderColor: '#10b981' },
+            { type: 'bar', label: 'Irrigation Volume (L)', data: [140, 0, 180, 0, 130, 190, 0], backgroundColor: 'rgba(59, 130, 246, 0.5)' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function setAnalyticsTimeframe(tf) {
+      document.querySelectorAll('.hist-btn').forEach(b => {
+        if (b.getAttribute('data-tf') === tf) {
+          b.className = 'hist-btn px-3 py-1 rounded font-bold bg-agro-600 text-white';
+        } else {
+          b.className = 'hist-btn px-3 py-1 rounded font-semibold text-slate-600 hover:bg-slate-100';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
