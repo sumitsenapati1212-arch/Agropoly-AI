@@ -1,0 +1,8 @@
+{
+  "name": "AgroPoly Smart",
+  "description": "Smart Monitoring for Smarter Polyhouse Farming with real-time IoT sensor telemetry, automated irrigation, ventilation control, and crop analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

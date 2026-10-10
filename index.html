@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AgroPoly Smart - Smart Monitoring for Smarter Polyhouse Farming</title>
+  <title>AgroPoly Smart</title>
+  <meta name="description" content="Smart Monitoring for Smarter Polyhouse Farming with real-time IoT sensor telemetry, automated irrigation, ventilation control, and crop analytics." />
+  <meta property="og:title" content="AgroPoly Smart" />
+  <meta property="og:description" content="Smart Monitoring for Smarter Polyhouse Farming with real-time IoT sensor telemetry, automated irrigation, ventilation control, and crop analytics." />
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -102,12 +105,9 @@
         <button onclick="navigate('dashboard')" class="nav-tab px-3 py-2 rounded-lg text-xs font-bold text-agro-700 bg-agro-100" data-view="dashboard">Dashboard</button>
         <button onclick="navigate('sensors')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="sensors">Sensors</button>
         <button onclick="navigate('history')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="history">Analytics</button>
-        <button onclick="navigate('irrigation')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="irrigation">Irrigation</button>
-        <button onclick="navigate('ventilation')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="ventilation">Ventilation</button>
         <button onclick="navigate('crops')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="crops">Crops</button>
         <button onclick="navigate('ai-scanner')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="ai-scanner">AI Scanner</button>
         <button onclick="navigate('fertilizer')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="fertilizer">Fertilizer</button>
-        <button onclick="navigate('weather')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="weather">Weather</button>
         <button onclick="navigate('calculator')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="calculator">Economics</button>
         <button onclick="navigate('iot-setup')" class="nav-tab px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-view="iot-setup">ESP32 Setup</button>
       </nav>
@@ -133,12 +133,9 @@
       <button onclick="navigate('dashboard')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-bold text-agro-700 bg-agro-100" data-view="dashboard">Dashboard</button>
       <button onclick="navigate('sensors')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="sensors">Sensors</button>
       <button onclick="navigate('history')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="history">Analytics</button>
-      <button onclick="navigate('irrigation')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="irrigation">Irrigation</button>
-      <button onclick="navigate('ventilation')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="ventilation">Ventilation</button>
       <button onclick="navigate('crops')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="crops">Crops</button>
       <button onclick="navigate('ai-scanner')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="ai-scanner">AI Scanner</button>
       <button onclick="navigate('fertilizer')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="fertilizer">Fertilizer</button>
-      <button onclick="navigate('weather')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="weather">Weather</button>
       <button onclick="navigate('calculator')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="calculator">Economics</button>
       <button onclick="navigate('iot-setup')" class="nav-tab-m whitespace-nowrap px-3 py-1 rounded text-xs font-medium text-slate-600" data-view="iot-setup">ESP32 Setup</button>
     </div>
@@ -164,28 +161,6 @@
           </div>
           <div id="controllerIconBox" class="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <i data-lucide="cpu" class="w-6 h-6"></i>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-bold uppercase text-slate-400">Drip Irrigation</p>
-            <p id="dashPumpStatus" class="text-base font-black text-slate-800 mt-0.5">PUMP: OFF</p>
-            <p id="dashPumpMode" class="text-xs text-slate-500 font-medium">Mode: Auto-Smart (Soil &lt; 50%)</p>
-          </div>
-          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <i data-lucide="droplets" class="w-6 h-6"></i>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-bold uppercase text-slate-400">Ventilation Exhaust</p>
-            <p id="dashFanStatus" class="text-base font-black text-slate-800 mt-0.5">FAN: OFF</p>
-            <p id="dashFanMode" class="text-xs text-slate-500 font-medium">Auto Threshold: 30.0°C</p>
-          </div>
-          <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <i data-lucide="fan" class="w-6 h-6"></i>
           </div>
         </div>
 
@@ -301,93 +276,6 @@
             </div>
           </div>
 
-          <!-- Card 4: Light Intensity -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div class="flex items-center space-x-2.5">
-                <div class="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
-                  <i data-lucide="sun" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <h3 class="text-sm font-bold text-slate-900">Light Intensity</h3>
-                  <p class="text-[11px] text-slate-400">Sensor: BH1750 Digital I2C (GPIO 21/22)</p>
-                </div>
-              </div>
-              <span id="badge-light" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
-            </div>
-            <div>
-              <div class="flex items-baseline space-x-1.5">
-                <span id="val-light" class="text-3xl font-black text-slate-900">--</span>
-                <span class="text-slate-500 font-bold text-sm">lux</span>
-              </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
-                <div id="bar-light" class="bg-yellow-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-            </div>
-            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
-              <span>Target: <strong>18,000 - 35,000 lux</strong></span>
-              <span id="time-light">Updated: --</span>
-            </div>
-          </div>
-
-          <!-- Card 5: Carbon Dioxide -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div class="flex items-center space-x-2.5">
-                <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                  <i data-lucide="wind" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <h3 class="text-sm font-bold text-slate-900">Carbon Dioxide (CO₂)</h3>
-                  <p class="text-[11px] text-slate-400">Sensor: MH-Z19 NDIR Optical UART</p>
-                </div>
-              </div>
-              <span id="badge-co2" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
-            </div>
-            <div>
-              <div class="flex items-baseline space-x-1.5">
-                <span id="val-co2" class="text-3xl font-black text-slate-900">--</span>
-                <span class="text-slate-500 font-bold text-sm">ppm</span>
-              </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
-                <div id="bar-co2" class="bg-purple-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-            </div>
-            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
-              <span>Target Enrichment: <strong>600 - 1,000 ppm</strong></span>
-              <span id="time-co2">Updated: --</span>
-            </div>
-          </div>
-
-          <!-- Card 6: Water Tank Level -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div class="flex items-center space-x-2.5">
-                <div class="p-2 bg-cyan-100 text-cyan-600 rounded-lg">
-                  <i data-lucide="gauge" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <h3 class="text-sm font-bold text-slate-900">Water Tank Level</h3>
-                  <p class="text-[11px] text-slate-400">Sensor: Ultrasonic HC-SR04 (GPIO 18/19)</p>
-                </div>
-              </div>
-              <span id="badge-tank" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500">Waiting...</span>
-            </div>
-            <div>
-              <div class="flex items-baseline space-x-1.5">
-                <span id="val-tank" class="text-3xl font-black text-slate-900">--</span>
-                <span class="text-slate-500 font-bold text-sm">%</span>
-              </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
-                <div id="bar-tank" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-            </div>
-            <div class="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-medium">
-              <span>Safety Cutoff: <strong>&gt; 20 %</strong></span>
-              <span id="time-tank">Updated: --</span>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -481,21 +369,6 @@
           <p class="text-[10px] font-bold uppercase text-slate-400">Mean Soil Moisture</p>
           <p class="text-lg font-black text-slate-900 mt-0.5">62.0 %</p>
           <p class="text-[10px] text-slate-400">Min: 45% | Max: 76%</p>
-        </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] font-bold uppercase text-slate-400">Peak Light (DLI)</p>
-          <p class="text-lg font-black text-slate-900 mt-0.5">34.2k lux</p>
-          <p class="text-[10px] text-slate-400">DLI: 15.6 mol/m²/d</p>
-        </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] font-bold uppercase text-slate-400">Mean CO₂ Target</p>
-          <p class="text-lg font-black text-slate-900 mt-0.5">680 ppm</p>
-          <p class="text-[10px] text-slate-400">Photosynthesis Peak</p>
-        </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] font-bold uppercase text-slate-400">Irrigation Cycles</p>
-          <p class="text-lg font-black text-slate-900 mt-0.5">5 Dispatches</p>
-          <p class="text-[10px] text-slate-400">Est. 210 Litres</p>
         </div>
       </div>
 
@@ -1298,7 +1171,7 @@
     }
 
     function resetTelemetryDisplay() {
-      ['temp', 'hum', 'soil', 'light', 'co2', 'tank'].forEach(id => {
+      ['temp', 'hum', 'soil'].forEach(id => {
         document.getElementById(`val-${id}`).innerText = '--';
         document.getElementById(`badge-${id}`).innerText = 'Waiting...';
         document.getElementById(`badge-${id}`).className = 'px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-500';
@@ -1324,9 +1197,6 @@
       updateSensorCard('temp', data.temperature, '°C', AGRO_APP.cropDatabase[AGRO_APP.activeCrop].tempRange, (data.temperature / 45) * 100);
       updateSensorCard('hum', data.humidity, '%', AGRO_APP.cropDatabase[AGRO_APP.activeCrop].humRange, data.humidity);
       updateSensorCard('soil', data.soil_moisture, '%', [AGRO_APP.actuators.pump.threshold, 100], data.soil_moisture);
-      updateSensorCard('light', data.light.toLocaleString(), 'lux', [18000, 35000], (data.light / 40000) * 100);
-      updateSensorCard('co2', data.co2, 'ppm', [500, 1000], (data.co2 / 1400) * 100);
-      updateSensorCard('tank', data.water_level, '%', [20, 100], data.water_level);
 
       // Evaluate Automated Closed Loops
       evaluateActuatorRules(data);
@@ -1439,15 +1309,23 @@
       const dash = document.getElementById('dashPumpStatus');
       
       if (state === 'ON') {
-        badge.innerText = 'RUNNING (ACTIVE)';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800';
-        dash.innerText = 'PUMP: RUNNING';
-        dash.className = 'text-base font-black text-blue-600 mt-0.5';
+        if (badge) {
+          badge.innerText = 'RUNNING (ACTIVE)';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800';
+        }
+        if (dash) {
+          dash.innerText = 'PUMP: RUNNING';
+          dash.className = 'text-base font-black text-blue-600 mt-0.5';
+        }
       } else {
-        badge.innerText = 'STANDBY (OFF)';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
-        dash.innerText = 'PUMP: OFF';
-        dash.className = 'text-base font-black text-slate-800 mt-0.5';
+        if (badge) {
+          badge.innerText = 'STANDBY (OFF)';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
+        }
+        if (dash) {
+          dash.innerText = 'PUMP: OFF';
+          dash.className = 'text-base font-black text-slate-800 mt-0.5';
+        }
       }
       logIrrigationEvent(state, reason);
     }
@@ -1458,15 +1336,23 @@
       const dash = document.getElementById('dashFanStatus');
 
       if (state === 'ON') {
-        badge.innerText = 'RUNNING (EXHAUSTING)';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800';
-        dash.innerText = 'FAN: RUNNING';
-        dash.className = 'text-base font-black text-amber-600 mt-0.5';
+        if (badge) {
+          badge.innerText = 'RUNNING (EXHAUSTING)';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800';
+        }
+        if (dash) {
+          dash.innerText = 'FAN: RUNNING';
+          dash.className = 'text-base font-black text-amber-600 mt-0.5';
+        }
       } else {
-        badge.innerText = 'STANDBY (OFF)';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
-        dash.innerText = 'FAN: OFF';
-        dash.className = 'text-base font-black text-slate-800 mt-0.5';
+        if (badge) {
+          badge.innerText = 'STANDBY (OFF)';
+          badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600';
+        }
+        if (dash) {
+          dash.innerText = 'FAN: OFF';
+          dash.className = 'text-base font-black text-slate-800 mt-0.5';
+        }
       }
     }
 
@@ -1524,14 +1410,16 @@
 
     function setPumpMode(mode) {
       AGRO_APP.actuators.pump.mode = mode;
-      document.getElementById('dashPumpMode').innerText = mode === 'AUTO' ? `Mode: Auto-Smart (Soil < ${AGRO_APP.actuators.pump.threshold}%)` : 'Mode: Manual Override';
+      const dashPumpMode = document.getElementById('dashPumpMode');
+      if (dashPumpMode) dashPumpMode.innerText = mode === 'AUTO' ? `Mode: Auto-Smart (Soil < ${AGRO_APP.actuators.pump.threshold}%)` : 'Mode: Manual Override';
       document.getElementById('btnPumpModeAuto').className = mode === 'AUTO' ? 'py-2.5 px-3 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
       document.getElementById('btnPumpModeManual').className = mode === 'MANUAL' ? 'py-2.5 px-3 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
     }
 
     function setFanMode(mode) {
       AGRO_APP.actuators.fan.mode = mode;
-      document.getElementById('dashFanMode').innerText = mode === 'AUTO' ? `Auto Threshold: ${AGRO_APP.actuators.fan.threshold}°C` : 'Mode: Manual Override';
+      const dashFanMode = document.getElementById('dashFanMode');
+      if (dashFanMode) dashFanMode.innerText = mode === 'AUTO' ? `Auto Threshold: ${AGRO_APP.actuators.fan.threshold}°C` : 'Mode: Manual Override';
       document.getElementById('btnFanModeAuto').className = mode === 'AUTO' ? 'py-2.5 px-3 rounded-lg border-2 border-amber-600 bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
       document.getElementById('btnFanModeManual').className = mode === 'MANUAL' ? 'py-2.5 px-3 rounded-lg border-2 border-amber-600 bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition' : 'py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition';
     }
@@ -1540,13 +1428,15 @@
       AGRO_APP.actuators.pump.threshold = parseInt(val);
       document.getElementById('soilSetDisplay').innerText = `Soil Moisture < ${val}%`;
       document.getElementById('opt-soil-text').innerText = `< ${val} %`;
-      document.getElementById('dashPumpMode').innerText = `Mode: Auto-Smart (Soil < ${val}%)`;
+      const dashPumpMode = document.getElementById('dashPumpMode');
+      if (dashPumpMode) dashPumpMode.innerText = `Mode: Auto-Smart (Soil < ${val}%)`;
     }
 
     function onTempSliderChange(val) {
       AGRO_APP.actuators.fan.threshold = parseFloat(val);
       document.getElementById('tempSetDisplay').innerText = `Air Temp > ${val}.0 °C`;
-      document.getElementById('dashFanMode').innerText = `Auto Threshold: ${val}.0°C`;
+      const dashFanMode = document.getElementById('dashFanMode');
+      if (dashFanMode) dashFanMode.innerText = `Auto Threshold: ${val}.0°C`;
     }
 
     // Crop Selection
@@ -1569,10 +1459,7 @@
       const fleet = [
         { name: 'Air Temperature', hw: 'DHT22 / AM2302 (GPIO 4)', val: s.temperature !== null ? `${s.temperature} °C` : '--', range: '20.0 - 28.0 °C' },
         { name: 'Relative Humidity', hw: 'DHT22 Capacitive (GPIO 4)', val: s.humidity !== null ? `${s.humidity} %` : '--', range: '60 - 75 %' },
-        { name: 'Soil Moisture Probe', hw: 'Capacitive V1.2 (GPIO 34 ADC)', val: s.soil_moisture !== null ? `${s.soil_moisture} %` : '--', range: '> 50 %' },
-        { name: 'Light Intensity Sensor', hw: 'BH1750 Digital I2C (GPIO 21/22)', val: s.light !== null ? `${s.light.toLocaleString()} lux` : '--', range: '18k - 35k lux' },
-        { name: 'Carbon Dioxide (CO₂)', hw: 'MH-Z19 NDIR Optical UART', val: s.co2 !== null ? `${s.co2} ppm` : '--', range: '600 - 1000 ppm' },
-        { name: 'Water Tank Level', hw: 'Ultrasonic HC-SR04 (GPIO 18/19)', val: s.water_level !== null ? `${s.water_level} %` : '--', range: '> 20 %' }
+        { name: 'Soil Moisture Probe', hw: 'Capacitive V1.2 (GPIO 34 ADC)', val: s.soil_moisture !== null ? `${s.soil_moisture} %` : '--', range: '> 50 %' }
       ];
 
       tbody.innerHTML = fleet.map(f => `
